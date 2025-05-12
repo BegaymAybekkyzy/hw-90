@@ -1,25 +1,40 @@
 import AppToolbar from "./components/AppToolbar/AppToolbar.tsx";
 import {useEffect, useRef, useState} from "react";
 import * as React from "react";
+import type {IDrawing, IncomingMessage} from "./types.s.ts";
 
 const App = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+    const ws = useRef<WebSocket | null>(null);
 
     const [isDrawing, setIsDrawing] = useState(false);
+    const [drawing, setDrawing] = useState<IDrawing[]>([]);
 
     useEffect(() => {
+        ws.current = new WebSocket("ws://localhost:8000/draw-online");
+        ws.current.onclose = () => console.log("Connection closed");
+
+        ws.current.onmessage = (event) => {
+            const message = JSON.parse(event.data.toString()) as IncomingMessage;
+            if (message.type === "NEW_MESSAGE") {
+                message.payload.forEach((drawing: IDrawing[]) => {
+                    drawingFromApi(drawing);
+                });
+            }
+        };
+
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        canvas.width = window.innerWidth * 0.7;
-        canvas.height = window.innerHeight * 0.7;
-        const context = canvas.getContext('2d');
+        canvas.width = 1000;
+        canvas.height = 500;
+        const context = canvas.getContext("2d");
 
         if (!context) return;
-        context.lineCap = 'round';
-        context.strokeStyle = 'black';
-        context.lineWidth = 10;
+        context.lineCap = "round";
+        context.strokeStyle = "black";
+        context.lineWidth = 5;
         context.clearRect(0, 0, canvas.width, canvas.height);
         contextRef.current = context;
     }, []);
@@ -32,7 +47,14 @@ const App = () => {
         contextRef.current.moveTo(offsetX, offsetY);
         contextRef.current.lineTo(offsetX, offsetY);
         contextRef.current.stroke();
-        console.log(contextRef.current)
+
+        setDrawing(prevState => [
+            ...prevState,
+            {
+                x: offsetX,
+                y: offsetY
+            }
+        ]);
         setIsDrawing(true);
     };
 
@@ -41,26 +63,46 @@ const App = () => {
 
         const {offsetX, offsetY} = event.nativeEvent;
         contextRef.current.lineTo(offsetX, offsetY);
-        console.log(contextRef.current)
+
+        setDrawing(prevState => [
+            ...prevState,
+            {
+                x: offsetX,
+                y: offsetY
+            }
+        ]);
         contextRef.current.stroke();
+        console.log(drawing)
     };
 
     const stopDrawing = () => {
         if (!contextRef.current) return;
         contextRef.current.closePath();
-        console.log(contextRef)
         setIsDrawing(false);
+
+        if (ws.current && drawing.length > 0) {
+            ws.current.send(JSON.stringify({
+                type: "SEND_MESSAGE",
+                payload: [drawing]
+            }));
+        }
+        setDrawing([]);
     };
 
-    const setToDraw = () => {
-        if (!contextRef.current) return;
-        contextRef.current.globalCompositeOperation = 'source-over';
-    };
+    const drawingFromApi = (drawing: IDrawing[]) => {
+        const context = contextRef.current;
+        if (!context || drawing.length === 0) return;
 
+        context.beginPath();
+        context.moveTo(drawing[0].x, drawing[0].y);
 
-    const setToErase = () => {
-        if (!contextRef.current) return;
-        contextRef.current.globalCompositeOperation = 'destination-out';
+        for (let i = 1; i < drawing.length; i++) {
+            context.lineTo(drawing[i].x, drawing[i].y);
+        }
+
+        context.stroke();
+        context.closePath();
+        setDrawing([]);
     };
 
     return (
@@ -70,24 +112,14 @@ const App = () => {
             </header>
 
             <main className="container">
-               <div>
-                   <canvas
-                       className="border border-dark "
-                       ref={canvasRef}
-                       onMouseDown={startDrawing}
-                       onMouseMove={draw}
-                       onMouseUp={stopDrawing}
-                       onMouseLeave={stopDrawing}>
-                   </canvas>
-                   <div>
-                       <button onClick={setToDraw}>
-                           Draw
-                       </button>
-                       <button onClick={setToErase}>
-                           Erase
-                       </button>
-                   </div>
-               </div>
+                <canvas
+                    className="border border-dark "
+                    ref={canvasRef}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={stopDrawing}
+                    onMouseLeave={stopDrawing}>
+                </canvas>
             </main>
         </>
     )
