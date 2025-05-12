@@ -5,5 +5,5 @@ export interface IDrawing {
 
 export interface IncomingMessage {
     type: string;
-    payload: IDrawing[];
+    payload: IDrawing[][];
 }
