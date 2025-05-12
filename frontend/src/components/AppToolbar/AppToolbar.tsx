@@ -7,7 +7,7 @@ const AppToolbar = () => {
                 <Navbar.Brand
                     href="#home"
                     style={{color: 'white'}}
-                >Brand link</Navbar.Brand>
+                >Drawing</Navbar.Brand>
             </Container>
         </Navbar>
     );

@@ -28,7 +28,7 @@ const App = () => {
         if (!canvas) return;
 
         canvas.width = 1000;
-        canvas.height = 500;
+        canvas.height = 550;
         const context = canvas.getContext("2d");
 
         if (!context) return;
@@ -112,8 +112,11 @@ const App = () => {
             </header>
 
             <main className="container">
+                <h1 className="text-center">Online collaborative drawing board</h1>
+                <p className="text-center mb-5">This canvas is shared by everyone. You can only draw with the mouse.</p>
                 <canvas
-                    className="border border-dark "
+                    className="d-block mx-auto"
+                    style={{borderRadius: "10px", border: "1px solid #808080", backgroundColor: "#edebeb"}}
                     ref={canvasRef}
                     onMouseDown={startDrawing}
                     onMouseMove={draw}
