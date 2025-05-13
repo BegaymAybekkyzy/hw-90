@@ -1,6 +1,7 @@
 export interface IDrawing {
     x: number;
     y: number;
+    color: string;
 }
 
 export interface IncomingMessage {

@@ -2,6 +2,7 @@ import AppToolbar from "./components/AppToolbar/AppToolbar.tsx";
 import {useEffect, useRef, useState} from "react";
 import * as React from "react";
 import type {IDrawing, IncomingMessage} from "./types.s.ts";
+import ColorBlock from "./components/ColorBlock/ColorBlock.tsx";
 
 const App = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -10,6 +11,9 @@ const App = () => {
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawing, setDrawing] = useState<IDrawing[]>([]);
+    const [color, setColor] = useState("black");
+
+    const colorList = ["black", "purple", "red", "green", "blue", "yellow", "pink", "orange", "gray", "brown"];
 
     useEffect(() => {
         ws.current = new WebSocket("ws://localhost:8000/draw-online");
@@ -52,7 +56,8 @@ const App = () => {
             ...prevState,
             {
                 x: offsetX,
-                y: offsetY
+                y: offsetY,
+                color,
             }
         ]);
         setIsDrawing(true);
@@ -68,11 +73,11 @@ const App = () => {
             ...prevState,
             {
                 x: offsetX,
-                y: offsetY
+                y: offsetY,
+                color,
             }
         ]);
         contextRef.current.stroke();
-        console.log(drawing)
     };
 
     const stopDrawing = () => {
@@ -98,12 +103,19 @@ const App = () => {
 
         for (let i = 1; i < drawing.length; i++) {
             context.lineTo(drawing[i].x, drawing[i].y);
+            context.strokeStyle = drawing[i].color;
         }
 
         context.stroke();
         context.closePath();
         setDrawing([]);
     };
+
+    const colorChange = (color: string) => {
+        if (!contextRef.current) return;
+        setColor(color);
+        contextRef.current.strokeStyle = color;
+    }
 
     return (
         <>
@@ -114,15 +126,22 @@ const App = () => {
             <main className="container">
                 <h1 className="text-center">Online collaborative drawing board</h1>
                 <p className="text-center mb-5">This canvas is shared by everyone. You can only draw with the mouse.</p>
-                <canvas
-                    className="d-block mx-auto"
-                    style={{borderRadius: "10px", border: "1px solid #808080", backgroundColor: "#edebeb"}}
-                    ref={canvasRef}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}>
-                </canvas>
+                <div className="d-flex justify-content-center gap-3">
+                    <canvas
+                        className="d-block"
+                        style={{borderRadius: "10px", border: "1px solid #808080", backgroundColor: "#edebeb"}}
+                        ref={canvasRef}
+                        onMouseDown={startDrawing}
+                        onMouseMove={draw}
+                        onMouseUp={stopDrawing}
+                        onMouseLeave={stopDrawing}>
+                    </canvas>
+                    <div className="d-flex flex-column gap-2">
+                        {colorList.map((color, index) => (
+                            <ColorBlock key={index} colorChange={colorChange} color={color}/>
+                        ))}
+                    </div>
+                </div>
             </main>
         </>
     )
