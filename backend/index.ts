@@ -27,10 +27,8 @@ router.ws("/draw-online", (ws, _req) => {
             }));
         }
 
-
         ws.on("message", (message) => {
             const decodedMessage = JSON.parse(message.toString()) as IncomingMessage;
-
             if(decodedMessage.type === "SEND_MESSAGE") {
                 allDrawings.push(...decodedMessage.payload);
                 connectedClients.forEach(clientWs => {
